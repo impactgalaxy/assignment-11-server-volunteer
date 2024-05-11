@@ -41,15 +41,22 @@ async function run() {
 
         app.get("/volunteer", async (req, res) => {
             const filter = req.query.find;
+            const sort = req.query.sort;
+            const pageNumber = parseInt(req.query.pageNo);
+            const size = parseInt(req.query.size);
             let query = {};
             const regEx = { $regex: filter, $options: "i" };
+            let options = {};
+            if (sort) {
+                options = {
+                    sort: { deadLine: sort === "asc" ? 1 : -1 }
+                }
+            }
 
             if (filter) {
                 query = { category: regEx }
             }
-
-            console.log(query);
-            const result = await volunteerDatabase.find(query).toArray();
+            const result = await volunteerDatabase.find(query, options).skip(pageNumber * size).limit(size).toArray();
             res.send(result);
         });
 
