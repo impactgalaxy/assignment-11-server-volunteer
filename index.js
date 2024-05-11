@@ -40,7 +40,16 @@ async function run() {
         });
 
         app.get("/volunteer", async (req, res) => {
-            const result = await volunteerDatabase.find().toArray();
+            const filter = req.query.find;
+            let query = {};
+            const regEx = { $regex: filter, $options: "i" };
+
+            if (filter) {
+                query = { category: regEx }
+            }
+
+            console.log(query);
+            const result = await volunteerDatabase.find(query).toArray();
             res.send(result);
         });
 
