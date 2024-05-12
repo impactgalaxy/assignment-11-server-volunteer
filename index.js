@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 5000;
@@ -10,6 +11,7 @@ const app = express();
 // express middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/", (req, res) => res.send("Server for assignment_11 is running ..."));
 app.listen(port, () => console.log(`Sever running on port: ${port}`))
