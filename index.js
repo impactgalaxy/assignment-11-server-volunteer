@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 5000;
@@ -9,9 +10,23 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 // express middleware
-app.use(cors());
+const corsObj = {
+    origin: [
+        "http://localhost:5173",
+        "*",
+    ],
+    credentials: true,
+}
+app.use(cors(corsObj));
 app.use(express.json());
 app.use(cookieParser());
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
+
 
 app.get("/", (req, res) => res.send("Server for assignment_11 is running ..."));
 app.listen(port, () => console.log(`Sever running on port: ${port}`))
@@ -28,11 +43,43 @@ const client = new MongoClient(uri, {
     }
 });
 
+// custom middleware=> verify token;
+const verifyToken = async (req, res, next) => {
+    const token = req?.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized" })
+    }
+    jwt.verify(token, process.env.SECRET_KEY, (error, decoded) => {
+        if (error) {
+            return res.status(401).send({ message: "try" })
+        }
+        req.user = decoded;
+        console.log(decoded);
+        next();
+
+    })
+}
+
 async function run() {
     try {
 
         const databaseCollection_1 = client.db("assignment_11").collection("volunteer");
         const databaseCollection_2 = client.db("assignment_11").collection("becomeVolunteer");
+
+
+        // creating jwt
+        app.post("/jwt", async (req, res) => {
+            const email = req.body;
+            const token = jwt.sign(email, process.env.SECRET_KEY, {
+                expiresIn: "2h"
+            })
+            res.cookie("token", token, cookieOptions).send({ message: "success" })
+        });
+
+        app.post("/logout", async (req, res) => {
+            const userEmail = req.body;
+            res.clearCookie("token", { maxAge: 0 }).send({ message: "success" })
+        })
 
         // create post for volunteer
 
@@ -96,8 +143,12 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/becomeVolunteer", async (req, res) => {
+        app.get("/becomeVolunteer", verifyToken, async (req, res) => {
             const email = req.query.email;
+            const emailWithToken = req.user.email;
+            if (email !== emailWithToken) {
+                return res.status(403).send({ message: "Forbidden" })
+            }
             let query = {};
             if (email) {
                 query = { volunteerEmail: email }
