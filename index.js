@@ -51,10 +51,9 @@ const verifyToken = async (req, res, next) => {
     }
     jwt.verify(token, process.env.SECRET_KEY, (error, decoded) => {
         if (error) {
-            return res.status(401).send({ message: "try" })
+            return res.status(401).send({ message: "Unauthorized" })
         }
         req.user = decoded;
-        console.log(decoded);
         next();
 
     })
@@ -90,6 +89,7 @@ async function run() {
         });
 
         app.get("/volunteer", async (req, res) => {
+
             const filter = req.query.find;
             const sort = req.query.sort;
             const pageNumber = parseInt(req.query.pageNo);
@@ -109,6 +109,21 @@ async function run() {
             const result = await databaseCollection_1.find(query, options).skip(pageNumber * size).limit(size).toArray();
             res.send(result);
         });
+
+        app.get("/volunteerSecure", verifyToken, async (req, res) => {
+            const email = req.query.email;
+            const emailWithToken = req.user.email;
+            if (email !== emailWithToken) {
+                return res.status(403).send({ message: "forbidden" })
+            }
+
+            let query = {};
+            if (email) {
+                query = { organizationEmail: email };
+            }
+            const result = await databaseCollection_1.find(query).toArray();
+            res.send(result)
+        })
         app.get("/count", async (req, res) => {
             const query = req.query.filter;
             const regEx = { $regex: query, $options: "i" };
@@ -144,8 +159,8 @@ async function run() {
         });
 
         app.get("/becomeVolunteer", verifyToken, async (req, res) => {
-            const email = req.query.email;
-            const emailWithToken = req.user.email;
+            const email = req?.query?.email;
+            const emailWithToken = req?.user?.email;
             if (email !== emailWithToken) {
                 return res.status(403).send({ message: "Forbidden" })
             }
