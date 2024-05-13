@@ -165,6 +165,7 @@ async function run() {
             const id = req.query.id;
             const docs = req.body;
             const volunteerInfo = { name: docs?.volunteerName, email: docs?.volunteerEmail, status: docs?.status }
+
             const condition = [
                 { $set: { numberOfVolunteer: { $toInt: "$numberOfVolunteer" } } },
                 { $set: { numberOfVolunteer: { $subtract: ["$numberOfVolunteer", 1] } } },
@@ -191,6 +192,20 @@ async function run() {
                 query = { volunteerEmail: email }
             }
             const result = await databaseCollection_2.find(query).toArray();
+            res.send(result);
+        });
+
+        app.delete("/becomeVolunteer/:id", async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.organizationEmail;
+            let originalDataQuery = {}
+            if (email) {
+                originalDataQuery = { organizationEmail: email }
+            }
+            const filter = { _id: new ObjectId(id) };
+
+            await databaseCollection_1.updateMany(originalDataQuery, { $unset: { volunteerInfo: "" } });
+            const result = await databaseCollection_2.deleteOne(filter);
             res.send(result);
         })
         // Connect the client to the server	(optional starting in v4.7)
