@@ -110,6 +110,26 @@ async function run() {
             res.send(result);
         });
 
+        // delete data 
+        app.delete("/volunteer/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const result = await databaseCollection_1.deleteOne(filter);
+            res.send(result);
+        });
+
+        // update
+        app.patch("/volunteer/:id", async (req, res) => {
+            const id = req.params.id;
+            const getDocs = req.body;
+            const setDocs = {
+                $set: getDocs
+            }
+            const filter = { _id: new ObjectId(id) };
+            const result = await databaseCollection_1.updateOne(filter, setDocs);
+            res.send(result);
+        })
+
         app.get("/volunteerSecure", verifyToken, async (req, res) => {
             const email = req.query.email;
             const emailWithToken = req.user.email;
