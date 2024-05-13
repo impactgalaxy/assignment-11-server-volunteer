@@ -164,9 +164,11 @@ async function run() {
         app.post("/becomeVolunteer", async (req, res) => {
             const id = req.query.id;
             const docs = req.body;
+            const volunteerInfo = { name: docs?.volunteerName, email: docs?.volunteerEmail, status: docs?.status }
             const condition = [
                 { $set: { numberOfVolunteer: { $toInt: "$numberOfVolunteer" } } },
-                { $set: { numberOfVolunteer: { $subtract: ["$numberOfVolunteer", 1] } } }
+                { $set: { numberOfVolunteer: { $subtract: ["$numberOfVolunteer", 1] } } },
+                { $set: { volunteerInfo } }
             ]
             let filter = {};
             if (id) {
