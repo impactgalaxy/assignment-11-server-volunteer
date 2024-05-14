@@ -1,14 +1,13 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
 const app = express();
-
 // express middleware
 const corsObj = {
     origin: [
@@ -16,6 +15,7 @@ const corsObj = {
         "https://assignment-11-3f45a.firebaseapp.com"
     ],
     credentials: true,
+
 }
 app.use(cors(corsObj));
 app.use(express.json());
@@ -23,9 +23,11 @@ app.use(cookieParser());
 
 const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production" ? true : false,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-};
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN
+}
 
 
 app.get("/", (req, res) => res.send("Server for assignment_11 is running ..."));
@@ -45,9 +47,9 @@ const client = new MongoClient(uri, {
 
 // custom middleware=> verify token;
 const verifyToken = async (req, res, next) => {
-    const token = req?.cookies?.token;
+    const token = req.cookies?.token;
     if (!token) {
-        return res.status(401).send({ message: "Unauthorized" })
+        return res.status(401).send({ message: "Unauthorized access" })
     }
     jwt.verify(token, process.env.SECRET_KEY, (error, decoded) => {
         if (error) {
@@ -56,7 +58,8 @@ const verifyToken = async (req, res, next) => {
         req.user = decoded;
         next();
 
-    })
+    }
+    )
 }
 
 async function run() {
@@ -69,14 +72,14 @@ async function run() {
         // creating jwt
         app.post("/jwt", (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.SECRET_KEY, {
-                expiresIn: "1h"
-            })
-            res.cookie("token", token, { expiresIn: "1h" }).send({ message: "success" })
+            const token = jwt.sign(user, process.env.SECRET_KEY);
+            res.cookie("token", token, cookieOptions);
+            res.send({ message: "success" })
         });
 
-        app.post("/logout", (req, res) => {
-            res.clearCookie("token", { ...cookieOptions, maxAge: 0 }).send({ message: "success" })
+        app.get("/logout", (req, res) => {
+            res.clearCookie("token", { maxAge: 0 });
+            res.send({ message: "success" });
         })
 
         // create post for volunteer
@@ -137,7 +140,7 @@ async function run() {
             const email = req.query.email;
             const emailWithToken = req.user.email;
             if (email !== emailWithToken) {
-                return res.status(403).send({ message: "forbidden" })
+                return res.status(403).send({ message: "Forbidden" })
             }
 
             let query = {};
