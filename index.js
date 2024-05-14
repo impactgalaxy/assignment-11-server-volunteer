@@ -13,7 +13,8 @@ const app = express();
 const corsObj = {
     origin: [
         "http://localhost:5173",
-        "*",
+        "https://assignment-11-3f45a.web.app",
+        "https://assignment-11-3f45a.firebaseapp.com"
     ],
     credentials: true,
 }
@@ -109,6 +110,10 @@ async function run() {
             const result = await databaseCollection_1.find(query, options).skip(pageNumber * size).limit(size).toArray();
             res.send(result);
         });
+        app.get("/volunteerSection", async (req, res) => {
+            const result = await databaseCollection_1.find().sort({ deadLine: 1 }).toArray();
+            res.send(result);
+        })
 
         // delete data 
         app.delete("/volunteer/:id", async (req, res) => {
