@@ -11,6 +11,7 @@ const app = express();
 // express middleware
 const corsObj = {
     origin: [
+        "http://localhost:5173",
         "https://assignment-11-3f45a.web.app",
         "https://assignment-11-3f45a.firebaseapp.com"
     ],
@@ -23,8 +24,8 @@ app.use(cookieParser());
 
 const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production' ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     path: '/',
     domain: process.env.COOKIE_DOMAIN
 }
@@ -72,13 +73,13 @@ async function run() {
         // creating jwt
         app.post("/jwt", (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.SECRET_KEY);
+            const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "1h" });
             res.cookie("token", token, cookieOptions);
             res.send({ message: "success" })
         });
 
         app.get("/logout", (req, res) => {
-            res.clearCookie("token", { maxAge: 0 });
+            res.clearCookie("token", { ...cookieOptions, maxAge: 0 });
             res.send({ message: "success" });
         })
 
@@ -97,8 +98,8 @@ async function run() {
             const pageNumber = parseInt(req.query.pageNo);
             const size = parseInt(req.query.size);
             let query = {};
-            const regEx = { $regex: filter, $options: "i" };
             let options = {};
+            const regEx = { $regex: filter, $options: "i" };
             if (sort) {
                 options = {
                     sort: { deadLine: sort === "asc" ? 1 : -1 }
@@ -106,7 +107,7 @@ async function run() {
             }
 
             if (filter) {
-                query = { category: regEx }
+                query = { title: regEx }
             }
             const result = await databaseCollection_1.find(query, options).skip(pageNumber * size).limit(size).toArray();
             res.send(result);
@@ -155,8 +156,9 @@ async function run() {
             const regEx = { $regex: query, $options: "i" };
             let options = {};
             if (query) {
-                options = { category: regEx }
+                options = { title: regEx }
             }
+            console.log("count", query);
             const result = await databaseCollection_1.countDocuments(options);
             res.send({ count: result });
         })
@@ -185,7 +187,9 @@ async function run() {
 
             const result = await databaseCollection_2.insertOne(docs);
             res.send(result);
+
         });
+
 
         app.get("/becomeVolunteer", verifyToken, async (req, res) => {
             const email = req?.query?.email;
